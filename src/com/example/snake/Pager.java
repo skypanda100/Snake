@@ -125,27 +125,27 @@ public class Pager extends View {
          * 计算每个bitmap的移动距离
          */
         distance = getMeasuredWidth() / mColumns * (mColumns - 1) * mRows + getMeasuredHeight();
-        if(mRows % 2 == 1){
-            offsetUpDistance = getMeasuredWidth() / mColumns * (mColumns - 1) +  + getMeasuredHeight() / mRows;
+        if (mRows % 2 == 1) {
+            offsetUpDistance = getMeasuredWidth() / mColumns * (mColumns - 1) + +getMeasuredHeight() / mRows;
             offsetUpHeight = getMeasuredHeight() + getMeasuredHeight() / mRows;
             offsetDownDistance = getMeasuredWidth() / mColumns * (mColumns - 1) + getMeasuredHeight() / mRows;
-            offsetDownHeight = - getMeasuredHeight() - getMeasuredHeight() / mRows;
-        }else{
+            offsetDownHeight = -getMeasuredHeight() - getMeasuredHeight() / mRows;
+        } else {
             offsetUpDistance = 0;
             offsetUpHeight = getMeasuredHeight();
             offsetDownDistance = 0;
-            offsetDownHeight = - getMeasuredHeight();
+            offsetDownHeight = -getMeasuredHeight();
         }
 
         /**
          * 保证每个bitmap是个正方形，避免bitmap产生重叠（不好看）
          * 计算每个bitmap的宽或高应该缩小多少
          */
-        if(getMeasuredHeight() / mRows > getMeasuredWidth() / mColumns){
+        if (getMeasuredHeight() / mRows > getMeasuredWidth() / mColumns) {
             scaleX = 0.9f;
-            scaleY = ((float)getMeasuredWidth() / mColumns) / ((float)getMeasuredHeight() / mRows) * 0.9f;
-        }else{
-            scaleX = ((float)getMeasuredHeight() / mRows) / ((float)getMeasuredWidth() / mColumns) * 0.9f;
+            scaleY = ((float) getMeasuredWidth() / mColumns) / ((float) getMeasuredHeight() / mRows) * 0.9f;
+        } else {
+            scaleX = ((float) getMeasuredHeight() / mRows) / ((float) getMeasuredWidth() / mColumns) * 0.9f;
             scaleY = 0.9f;
         }
 
@@ -181,78 +181,96 @@ public class Pager extends View {
 
     /**
      * 绘制移动的部分
-     * @param canvas
-     * @param imagePiece
-     * @param curDistance
-     * @param oldCoordX
-     * @param oldCoordY
-     * @param offsetHeight
+     *
+     * @param canvas       画布
+     * @param imagePiece   bitmap（被绘制的对象）
+     * @param curDistance  当前离初始位置的距离
+     * @param oldCoordX    初始位置（x坐标）
+     * @param oldCoordY    初始位置（y坐标）
+     * @param offsetHeight 画布偏移高度
+     * @param uod          1：代表手势从左往右，下一页从下面往上出现   -1：代表手势从右往左，下一页从上面往下出现
      */
-    private void drawSnake(Canvas canvas, ImagePiece imagePiece, float curDistance, float oldCoordX, float oldCoordY, float offsetHeight, int uod){
+    private void drawSnake(Canvas canvas, ImagePiece imagePiece, float curDistance, float oldCoordX, float oldCoordY, float offsetHeight, int uod) {
+        //当前x坐标
         float coordX = 0;
+        //当前y坐标
         float coordY = 0;
 
-        if(imagePiece.direction == 0){
+        /**
+         * direction为0代表bitmap的移动方向为从右向左
+         * direction为1代表bitmap的移动方向为从左向右
+         */
+        if (imagePiece.direction == 0) {
+            //滑离初始行后的距离
             float curDistance1 = curDistance - oldCoordX - imagePiece.bitmap.getHeight();
+            //每一行的滑动距离（不包括初始行）
             float curWidth = imagePiece.bitmap.getWidth() * (mColumns - 1) + imagePiece.bitmap.getHeight();
+            //offset小于零：还处在初始行 offset大于零：已经滑离初始行
             float offset = curDistance1 / curWidth;
+            //当前bitmap划过了完整的一行的行数
+            //完整的一行的距离为curWidth
             int intOffset = (int) Math.floor(offset);
 
-            if(offset <= 0){
-                if(oldCoordX - curDistance >= 0){
+            if (offset <= 0) {
+                if (oldCoordX - curDistance >= 0) { //还在初始行
                     coordX = oldCoordX - curDistance;
                     coordY = oldCoordY;
-                }else{
+                } else {    //在行的拐角处
                     coordX = 0;
                     coordY = oldCoordY + uod * (curDistance - oldCoordX);
                 }
-            }else{
-                if(intOffset % 2 == 0){
-                    if((curWidth * offset - intOffset * curWidth) > imagePiece.bitmap.getWidth() * (mColumns - 1)){
+            } else {
+                if (intOffset % 2 == 0) { //当前bitmap正在从左往右滑动
+                    if ((curWidth * offset - intOffset * curWidth) > imagePiece.bitmap.getWidth() * (mColumns - 1)) { //正处在右边拐角处
                         coordX = imagePiece.bitmap.getWidth() * (mColumns - 1);
                         coordY = oldCoordY + uod * (intOffset + 1) * imagePiece.bitmap.getHeight() + uod * ((curWidth * offset - intOffset * curWidth) - imagePiece.bitmap.getWidth() * (mColumns - 1));
-                    }else{
+                    } else {    //正处在当前行（非拐角处）
                         coordX = curWidth * offset - intOffset * curWidth;
                         coordY = oldCoordY + uod * (intOffset + 1) * imagePiece.bitmap.getHeight();
                     }
-                }else{
-                    if((curWidth * offset - intOffset * curWidth) > imagePiece.bitmap.getWidth() * (mColumns - 1)){
+                } else {    //当前bitmap正在从右往左滑动
+                    if ((curWidth * offset - intOffset * curWidth) > imagePiece.bitmap.getWidth() * (mColumns - 1)) { // 正处在左边拐角处
                         coordX = 0;
                         coordY = oldCoordY + uod * (intOffset + 1) * imagePiece.bitmap.getHeight() + uod * ((curWidth * offset - intOffset * curWidth) - imagePiece.bitmap.getWidth() * (mColumns - 1));
-                    }else{
+                    } else {    //正处在当前行（非拐角处）
                         coordX = imagePiece.bitmap.getWidth() * (mColumns - 1) - (curWidth * offset - intOffset * curWidth);
                         coordY = oldCoordY + uod * (intOffset + 1) * imagePiece.bitmap.getHeight();
                     }
                 }
             }
-        }else{
+        } else {
+            //滑离初始行后的距离
             float curDistance1 = curDistance - (imagePiece.bitmap.getWidth() * (mColumns - 1) - oldCoordX) - imagePiece.bitmap.getHeight();
+            //每一行的滑动距离（不包括初始行）
             float curWidth = imagePiece.bitmap.getWidth() * (mColumns - 1) + imagePiece.bitmap.getHeight();
+            //offset小于零：还处在初始行 offset大于零：已经滑离初始行
             float offset = curDistance1 / curWidth;
+            //当前bitmap划过了完整的一行的行数
+            //完整的一行的距离为curWidth
             int intOffset = (int) Math.floor(offset);
 
-            if(offset <= 0){
-                if(oldCoordX + curDistance <= imagePiece.bitmap.getWidth() * (mColumns - 1)){
+            if (offset <= 0) {
+                if (oldCoordX + curDistance <= imagePiece.bitmap.getWidth() * (mColumns - 1)) { //还在初始行
                     coordX = oldCoordX + curDistance;
                     coordY = oldCoordY;
-                }else{
+                } else {    //在行的拐角处
                     coordX = imagePiece.bitmap.getWidth() * (mColumns - 1);
                     coordY = oldCoordY + uod * (curDistance - (imagePiece.bitmap.getWidth() * (mColumns - 1) - oldCoordX));
                 }
-            }else{
-                if(intOffset % 2 == 0){
-                    if((curWidth * offset - intOffset * curWidth) > imagePiece.bitmap.getWidth() * (mColumns - 1)){
+            } else {
+                if (intOffset % 2 == 0) {   //当前bitmap正在从右往左滑动
+                    if ((curWidth * offset - intOffset * curWidth) > imagePiece.bitmap.getWidth() * (mColumns - 1)) {   //正处在左边拐角处
                         coordX = 0;
                         coordY = oldCoordY + uod * (intOffset + 1) * imagePiece.bitmap.getHeight() + uod * ((curWidth * offset - intOffset * curWidth) - imagePiece.bitmap.getWidth() * (mColumns - 1));
-                    }else{
+                    } else {    //正处在当前行（非拐角处）
                         coordX = imagePiece.bitmap.getWidth() * (mColumns - 1) - (curWidth * offset - intOffset * curWidth);
                         coordY = oldCoordY + uod * (intOffset + 1) * imagePiece.bitmap.getHeight();
                     }
-                }else{
-                    if((curWidth * offset - intOffset * curWidth) > imagePiece.bitmap.getWidth() * (mColumns - 1)){
+                } else {    //当前bitmap正在从左往右滑动
+                    if ((curWidth * offset - intOffset * curWidth) > imagePiece.bitmap.getWidth() * (mColumns - 1)) {   //正处在右边拐角处
                         coordX = imagePiece.bitmap.getWidth() * (mColumns - 1);
                         coordY = oldCoordY + uod * (intOffset + 1) * imagePiece.bitmap.getHeight() + uod * ((curWidth * offset - intOffset * curWidth) - imagePiece.bitmap.getWidth() * (mColumns - 1));
-                    }else{
+                    } else {    //正处在当前行（非拐角处）
                         coordX = curWidth * offset - intOffset * curWidth;
                         coordY = oldCoordY + uod * (intOffset + 1) * imagePiece.bitmap.getHeight();
                     }
@@ -274,22 +292,23 @@ public class Pager extends View {
 
     /**
      * 根据滑动距离绘制玻璃
+     *
      * @param canvas
      */
-    private void drawGlass(Canvas canvas){
+    private void drawGlass(Canvas canvas) {
         float ratio = Math.abs(deltaDistance) / (mWidth / 16);
-        if(deltaDistance == 0){
+        if (deltaDistance == 0) {
             return;
         }
-        if(ratio <= 1.0f){
+        if (ratio <= 1.0f) {
             mPaint.setAlpha((int) (ratio * 255));
-        }else{
-            ratio = (Math.abs(deltaDistance) - mWidth / 2)/ (mWidth / 4);
-            if(ratio >= 0 && ratio <= 1.0f){
+        } else {
+            ratio = (Math.abs(deltaDistance) - mWidth / 2) / (mWidth / 4);
+            if (ratio >= 0 && ratio <= 1.0f) {
                 mPaint.setAlpha((int) ((1 - ratio) * 255));
-            }else if(ratio < 0){
+            } else if (ratio < 0) {
                 mPaint.setAlpha(255);
-            }else{
+            } else {
                 return;
             }
         }
@@ -315,16 +334,16 @@ public class Pager extends View {
             isSplitCurImage = false;
             curImagePieces = split(bitmap, mRows, mColumns);
 
-            if(!isSetCoord){
+            if (!isSetCoord) {
                 initData();
                 isSetCoord = true;
             }
         }
 
-        if(deltaDistance <= 0){
+        if (deltaDistance <= 0) {
             float transformRatio = Math.abs(deltaDistance) / (mWidth / 16);
 
-            if(transformRatio <= 1){
+            if (transformRatio <= 1) {
                 /*for(int i = 0;i < mRows;i++) {
                     for (int j = 0; j < mColumns; j++) {
                         ImagePiece imagePiece = curImagePieces.get(i * mColumns + j);
@@ -337,7 +356,7 @@ public class Pager extends View {
                         }
                     }
                 }*/
-                for(int i = 0;i < mRows;i++) {
+                for (int i = 0; i < mRows; i++) {
                     for (int j = 0; j < mColumns; j++) {
                         ImagePiece imagePiece = curImagePieces.get(i * mColumns + j);
 
@@ -353,17 +372,19 @@ public class Pager extends View {
                         canvas.restore();
                     }
                 }
-            }else{
+            } else {
                 transformRatio = (Math.abs(deltaDistance) - mWidth / 16) / (mWidth / 2);
                 transformRatio = transformRatio > 1.0f ? 1.0f : transformRatio;
 
-                for(int i = mRows - 1;i >= 0;i--){
-                    for(int j = mColumns - 1;j >= 0;j--){
+                for (int i = mRows - 1; i >= 0; i--) {
+                    for (int j = mColumns - 1; j >= 0; j--) {
                         ImagePiece imagePiece = curImagePieces.get(i * mColumns + j);
                         if (imagePiece.direction == -1) {
                             if ((mRows - i) % 2 == 1) {
+                                //从右往左滑动
                                 imagePiece.direction = 0;
                             } else {
+                                //从左往右滑动
                                 imagePiece.direction = 1;
                             }
                         }
@@ -371,10 +392,10 @@ public class Pager extends View {
                     }
                 }
             }
-        }else{
+        } else {
             float transformRatio = Math.abs(deltaDistance) / (mWidth / 16);
 
-            if(transformRatio <= 1){
+            if (transformRatio <= 1) {
 /*                for(int i = 0;i < mRows;i++) {
                     for (int j = 0; j < mColumns; j++) {
                         ImagePiece imagePiece = curImagePieces.get(i * mColumns + j);
@@ -387,7 +408,7 @@ public class Pager extends View {
                         }
                     }
                 }*/
-                for(int i = 0;i < mRows;i++) {
+                for (int i = 0; i < mRows; i++) {
                     for (int j = 0; j < mColumns; j++) {
                         ImagePiece imagePiece = curImagePieces.get(i * mColumns + j);
 
@@ -403,12 +424,12 @@ public class Pager extends View {
                         canvas.restore();
                     }
                 }
-            }else{
+            } else {
                 transformRatio = (Math.abs(deltaDistance) - mWidth / 16) / (mWidth / 2);
                 transformRatio = transformRatio > 1.0f ? 1.0f : transformRatio;
 
-                for(int i = 0;i < mRows;i++){
-                    for(int j = 0;j < mColumns;j++){
+                for (int i = 0; i < mRows; i++) {
+                    for (int j = 0; j < mColumns; j++) {
                         ImagePiece imagePiece = curImagePieces.get(i * mColumns + j);
                         if (imagePiece.direction == -1) {
                             if (i % 2 == 1) {
@@ -432,16 +453,16 @@ public class Pager extends View {
             isSplitNextImage = false;
             nextImagePieces = split(bitmap, mRows, mColumns);
 
-            if(!isSetCoord){
+            if (!isSetCoord) {
                 initData();
                 isSetCoord = true;
             }
         }
 
-        if(deltaDistance <= 0){
+        if (deltaDistance <= 0) {
             float transformRatio = Math.abs(deltaDistance) / (mWidth / 32);
 
-            if(transformRatio <= 1){
+            if (transformRatio <= 1) {
 /*                for(int i = 0;i < mRows;i++) {
                     for (int j = 0; j < mColumns; j++) {
                         ImagePiece imagePiece = nextImagePieces.get(i * mColumns + j);
@@ -454,7 +475,7 @@ public class Pager extends View {
                         }
                     }
                 }*/
-                for(int i = 0;i < mRows;i++) {
+                for (int i = 0; i < mRows; i++) {
                     for (int j = 0; j < mColumns; j++) {
                         ImagePiece imagePiece = nextImagePieces.get(i * mColumns + j);
 
@@ -470,11 +491,11 @@ public class Pager extends View {
                         canvas.restore();
                     }
                 }
-            }else{
+            } else {
                 transformRatio = (Math.abs(deltaDistance) - mWidth / 32) / (mWidth / 32);
-                if(transformRatio <= 1){
-                    for(int i = mRows - 1;i >= 0;i--){
-                        for(int j = mColumns - 1;j >= 0;j--){
+                if (transformRatio <= 1) {
+                    for (int i = mRows - 1; i >= 0; i--) {
+                        for (int j = mColumns - 1; j >= 0; j--) {
                             ImagePiece imagePiece = nextImagePieces.get(i * mColumns + j);
                             if (imagePiece.direction == -1) {
                                 if ((mRows - i) % 2 == 1) {
@@ -486,11 +507,11 @@ public class Pager extends View {
                             drawSnake(canvas, imagePiece, offsetDownDistance * transformRatio, oldCoordX[i * mColumns + j], oldCoordY[i * mColumns + j], offsetDownHeight, 1);
                         }
                     }
-                }else{
+                } else {
                     transformRatio = (Math.abs(deltaDistance) - mWidth / 16) / (mWidth / 2);
-                    if(transformRatio <= 1.0f){
-                        for(int i = mRows - 1;i >= 0;i--){
-                            for(int j = mColumns - 1;j >= 0;j--){
+                    if (transformRatio <= 1.0f) {
+                        for (int i = mRows - 1; i >= 0; i--) {
+                            for (int j = mColumns - 1; j >= 0; j--) {
                                 ImagePiece imagePiece = nextImagePieces.get(i * mColumns + j);
                                 if (imagePiece.direction == -1) {
                                     if ((mRows - i) % 2 == 1) {
@@ -502,11 +523,11 @@ public class Pager extends View {
                                 drawSnake(canvas, imagePiece, distance * transformRatio + offsetDownDistance, oldCoordX[i * mColumns + j], oldCoordY[i * mColumns + j], offsetDownHeight, 1);
                             }
                         }
-                    }else{
+                    } else {
                         transformRatio = (Math.abs(deltaDistance) - mWidth / 2) / (mWidth / 4);
                         transformRatio = transformRatio > 1.0f ? 1.0f : transformRatio;
 
-                        for(int i = 0;i < mRows;i++) {
+                        for (int i = 0; i < mRows; i++) {
                             for (int j = 0; j < mColumns; j++) {
                                 ImagePiece imagePiece = nextImagePieces.get(i * mColumns + j);
 
@@ -525,10 +546,10 @@ public class Pager extends View {
                     }
                 }
             }
-        }else{
+        } else {
             float transformRatio = Math.abs(deltaDistance) / (mWidth / 32);
 
-            if(transformRatio <= 1){
+            if (transformRatio <= 1) {
 /*                for(int i = 0;i < mRows;i++) {
                     for (int j = 0; j < mColumns; j++) {
                         ImagePiece imagePiece = nextImagePieces.get(i * mColumns + j);
@@ -541,7 +562,7 @@ public class Pager extends View {
                         }
                     }
                 }*/
-                for(int i = 0;i < mRows;i++) {
+                for (int i = 0; i < mRows; i++) {
                     for (int j = 0; j < mColumns; j++) {
                         ImagePiece imagePiece = nextImagePieces.get(i * mColumns + j);
 
@@ -557,11 +578,11 @@ public class Pager extends View {
                         canvas.restore();
                     }
                 }
-            }else{
+            } else {
                 transformRatio = (Math.abs(deltaDistance) - mWidth / 32) / (mWidth / 32);
-                if(transformRatio <= 1){
-                    for(int i = 0;i < mRows;i++){
-                        for(int j = 0;j < mColumns;j++){
+                if (transformRatio <= 1) {
+                    for (int i = 0; i < mRows; i++) {
+                        for (int j = 0; j < mColumns; j++) {
                             ImagePiece imagePiece = nextImagePieces.get(i * mColumns + j);
                             if (imagePiece.direction == -1) {
                                 if (i % 2 == 1) {
@@ -573,12 +594,12 @@ public class Pager extends View {
                             drawSnake(canvas, imagePiece, offsetUpDistance * transformRatio, oldCoordX[i * mColumns + j], oldCoordY[i * mColumns + j], offsetUpHeight, -1);
                         }
                     }
-                }else{
+                } else {
                     transformRatio = (Math.abs(deltaDistance) - mWidth / 16) / (mWidth / 2);
 
-                    if(transformRatio <= 1.0f){
-                        for(int i = 0;i < mRows;i++){
-                            for(int j = 0;j < mColumns;j++){
+                    if (transformRatio <= 1.0f) {
+                        for (int i = 0; i < mRows; i++) {
+                            for (int j = 0; j < mColumns; j++) {
                                 ImagePiece imagePiece = nextImagePieces.get(i * mColumns + j);
                                 if (imagePiece.direction == -1) {
                                     if (i % 2 == 1) {
@@ -590,11 +611,11 @@ public class Pager extends View {
                                 drawSnake(canvas, imagePiece, distance * transformRatio + offsetUpDistance, oldCoordX[i * mColumns + j], oldCoordY[i * mColumns + j], offsetUpHeight, -1);
                             }
                         }
-                    }else{
+                    } else {
                         transformRatio = (Math.abs(deltaDistance) - mWidth / 2) / (mWidth / 4);
                         transformRatio = transformRatio > 1.0f ? 1.0f : transformRatio;
 
-                        for(int i = 0;i < mRows;i++) {
+                        for (int i = 0; i < mRows; i++) {
                             for (int j = 0; j < mColumns; j++) {
                                 ImagePiece imagePiece = nextImagePieces.get(i * mColumns + j);
 
@@ -643,7 +664,7 @@ public class Pager extends View {
             animatorSet.playTogether(
                     ObjectAnimator.ofFloat(this, "scaleX", 1.0f, 0.8f),
                     ObjectAnimator.ofFloat(this, "scaleY", 1.0f, 0.8f),
-                    ObjectAnimator.ofFloat(this, "translationY", 0, (float)-(mHeight - Math.cos(rotateX * Math.PI / 180) * mHeight)),
+                    ObjectAnimator.ofFloat(this, "translationY", 0, (float) -(mHeight - Math.cos(rotateX * Math.PI / 180) * mHeight)),
                     ObjectAnimator.ofFloat(this, "rotationX", 0, rotateX)
             );
             animatorSet.setDuration(500).start();
@@ -652,7 +673,7 @@ public class Pager extends View {
         if (event.getAction() == MotionEvent.ACTION_UP) {
             if (canDragOver()) {
                 startAnimation(2000);
-            }else{
+            } else {
                 startAnimation(1500);
             }
             this.postInvalidate();
@@ -664,7 +685,7 @@ public class Pager extends View {
                     animatorSet.playTogether(
                             ObjectAnimator.ofFloat(Pager.this, "scaleX", 0.8f, 1.0f),
                             ObjectAnimator.ofFloat(Pager.this, "scaleY", 0.8f, 1.0f),
-                            ObjectAnimator.ofFloat(Pager.this, "translationY", (float)-(mHeight - Math.cos(rotateX * Math.PI / 180) * mHeight), 0),
+                            ObjectAnimator.ofFloat(Pager.this, "translationY", (float) -(mHeight - Math.cos(rotateX * Math.PI / 180) * mHeight), 0),
                             ObjectAnimator.ofFloat(Pager.this, "rotationX", rotateX, 0)
                     );
                     animatorSet.setDuration(500).start();
@@ -678,26 +699,26 @@ public class Pager extends View {
     protected void onDraw(Canvas canvas) {
         //canvas.drawColor(0xFFAAAAAA);
         deltaDistance = mTouch.x - mFirstTouch.x;
-        if(deltaDistance < 0.0f){
-            if(deltaDistance > -2.0f) {
+        if (deltaDistance < 0.0f) {
+            if (deltaDistance > -2.0f) {
                 deltaDistance = 0.0f;
             }
-        }else{
-            if(deltaDistance < 2.0f) {
+        } else {
+            if (deltaDistance < 2.0f) {
                 deltaDistance = 0.0f;
             }
         }
-        if(!isCurrentFirst){
-            if(mNextPageBitmap != null){
+        if (!isCurrentFirst) {
+            if (mNextPageBitmap != null) {
                 //后半球
                 drawNextPageArea(canvas, mNextPageBitmap);
             }
             //前半球
             drawCurPageArea(canvas, mCurPageBitmap);
-        }else{
+        } else {
             //前半球
             drawCurPageArea(canvas, mCurPageBitmap);
-            if(mNextPageBitmap != null){
+            if (mNextPageBitmap != null) {
                 //后半球
                 drawNextPageArea(canvas, mNextPageBitmap);
             }
@@ -721,15 +742,15 @@ public class Pager extends View {
         int dx;
         float tmpDeltaDistance = mTouch.x - mFirstTouch.x;
         if (tmpDeltaDistance < 0) {
-            if(Math.abs(tmpDeltaDistance) > mWidth / 2){
+            if (Math.abs(tmpDeltaDistance) > mWidth / 2) {
                 dx = -(mWidth + 10);
-            }else{
+            } else {
                 dx = (int) Math.abs(tmpDeltaDistance);
             }
         } else {
-            if(tmpDeltaDistance > mWidth / 2){
+            if (tmpDeltaDistance > mWidth / 2) {
                 dx = (mWidth + 10);
-            }else{
+            } else {
                 dx = (int) -tmpDeltaDistance;
             }
         }
@@ -742,7 +763,7 @@ public class Pager extends View {
         }
     }
 
-    public boolean isAnimationRunning(){
+    public boolean isAnimationRunning() {
         return !mScroller.isFinished();
     }
 
